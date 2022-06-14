@@ -1,0 +1,106 @@
+service: serverless-intrinsic-function-example
+frameworkVersion: "3"
+
+provider:
+  name: aws
+  runtime: nodejs14.x
+
+resources:
+  Mappings:
+    RegionMap:
+      us-east-1:
+        regionName: "US East (N. Virginia)"
+      ap-southeast-3:
+        regionName: "Asia Pacific (Jakarta)"
+
+  Resources:
+    DynamoDbTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        AttributeDefinitions:
+          - AttributeName: "PK"
+            AttributeType: "S"
+          - AttributeName: "SK"
+            AttributeType: "S"
+        KeySchema:
+          - AttributeName: "PK"
+            KeyType: "HASH"
+          - AttributeName: "SK"
+            KeyType: "RANGE"
+        BillingMode: "PAY_PER_REQUEST"
+
+    CognitoUserPool:
+      Type: AWS::Cognito::UserPool
+      Properties:
+        UsernameAttributes:
+          - email
+        AutoVerifiedAttributes:
+          - email
+
+    CognitoUserPoolClient:
+      Type: AWS::Cognito::UserPoolClient
+      Properties:
+        UserPoolId:
+          Ref: CognitoUserPool
+        GenerateSecret: false
+
+  Outputs:
+    # Ref
+    DynamoDbTableId:
+      Value:
+        Ref: DynamoDbTable
+
+    CognitoUserPoolId:
+      Value:
+        Ref: CognitoUserPool
+
+    CognitoUserPoolClientId:
+      Value:
+        Ref: CognitoUserPoolClient
+
+    # GetAtt
+    DynamoDbTableArn:
+      Value:
+        Fn::GetAtt: [DynamoDbTable, Arn]
+
+    # String Operations
+    SplitOperation:
+      Description: Split Operation and return partition value of DynamoDbTable Arn
+      Value:
+        Fn::Select:
+          - 1
+          - Fn::Split:
+              - ":"
+              - Fn::GetAtt: [DynamoDbTable, Arn]
+    JoinOperation:
+      Description: Join operation to form cognito identity provider
+      Value:
+        Fn::Join:
+          - ""
+          - - https://cognito-idp.
+            - ${aws:region}
+            - .amazonaws.com/
+            - Ref: CognitoUserPool
+    SubOperation:
+      Description: Sub operation to form cognito identity provider
+      Value:
+        Fn::Sub:
+          - "https://cognito-idp.${aws:region}.amazonaws.com/${CognitoUserPoolId}"
+          - CognitoUserPoolId:
+              Ref: CognitoUserPool
+
+    # Select Operations
+    FirstAvailableZone:
+      Description: GetAZs and Select operation to return First Available zone
+      Value:
+        Fn::Select:
+          - 0
+          - Fn::GetAZs: ${aws:region}
+
+    # Find in map operation
+    RegionName:
+      Value:
+        Fn::FindInMap:
+          - RegionMap
+          - ${aws:region}
+          - regionName

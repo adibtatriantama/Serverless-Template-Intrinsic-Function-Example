@@ -1,0 +1,13 @@
+{
+  "name": "serverless-instrinsic-function-example",
+  "version": "1.0.0",
+  "license": "MIT",
+  "devDependencies": {
+    "serverless": "3.18.2",
+    "prettier": "2.6.2"
+  },
+  "scripts": {
+    "deploy": "sls deploy",
+    "destroy": "sls remove"
+}
+}
